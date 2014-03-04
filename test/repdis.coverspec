@@ -1,0 +1,6 @@
+{export, "./repdis/logs/cover"}.
+{level, details}.
+{incl_dirs, ["src/"]}.
+{incl_mods, [
+             repdis_pd
+            ]}.

@@ -1,0 +1,6 @@
+*~
+*.beam
+*.plt
+ebin
+logs
+

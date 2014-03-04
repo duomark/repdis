@@ -1,0 +1,17 @@
+%%-*- mode: erlang -*-
+%% -*- tab-width: 4;erlang-indent-level: 4;indent-tabs-mode: nil -*-
+%% ex: ts=4 sw=4 et
+
+{application, repdis,
+ [
+  {id, "repdis"},
+  {vsn, "0.1.0"},
+  {description, "Redis in the Process Dictionary"},
+  {modules,      [
+                  repdis_pd
+                 ]},
+  {registered,   []},
+  {applications, [kernel, stdlib, sasl]},
+  {included_applications, []},
+  {env, []}
+ ]}.
