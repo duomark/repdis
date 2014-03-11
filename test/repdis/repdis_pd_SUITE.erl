@@ -59,12 +59,13 @@ check_hget(_Config) ->
     Test_Empty_Dict_Hset
         = ?FORALL({Key, Field, Value}, {?TM:key(), ?TM:field(), ?TM:set_value()},
                   begin
-                      nil   = ?TM:hget(Key, Field),         % Currently not present
-                      1     = ?TM:hset(Key, Field, Value),  % Store the new value
-                      Value = ?TM:hget(Key, Field),         % hget retrieves the value
-                      Value = ?TM:hget(Key, Field),         % 2nd hget to see it still there
-                      1     = ?TM:hdel(Key, [Field]),       % hdel deletes the value
-                      nil   = ?TM:hget(Key, Field),         % Currently not present
+                      Bin_Value = iolist_to_binary(Value),
+                      nil       = ?TM:hget(Key, Field),         % Currently not present
+                      1         = ?TM:hset(Key, Field, Value),  % Store the new value
+                      Bin_Value = ?TM:hget(Key, Field),         % hget retrieves the value
+                      Bin_Value = ?TM:hget(Key, Field),         % 2nd hget to see it still there
+                      1         = ?TM:hdel(Key, [Field]),       % hdel deletes the value
+                      nil       = ?TM:hget(Key, Field),         % Currently not present
                       true
                   end),
     true = proper:quickcheck(Test_Empty_Dict_Hset),
@@ -73,7 +74,9 @@ check_hget(_Config) ->
     Test_Empty_Dict_Hmset
         = ?FORALL({Key, FV_Pairs_With_Dups}, {?TM:key(), ?TM:field_value_pairs()},
                   begin
-                      FV_Pairs = orddict:to_list(orddict:from_list(FV_Pairs_With_Dups)),
+                      Bin_FV_Pairs_With_Dups = [{iolist_to_binary(F), iolist_to_binary(V)}
+                                                || {F, V} <- FV_Pairs_With_Dups],
+                      FV_Pairs = dict:to_list(dict:from_list(Bin_FV_Pairs_With_Dups)),
                       {Fields, Values} = lists:unzip(FV_Pairs),
                       Size   = length(Fields),
                       Nils   = lists:duplicate(Size, nil),
