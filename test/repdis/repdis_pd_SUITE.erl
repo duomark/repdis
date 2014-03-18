@@ -106,14 +106,14 @@ check_hashes(_Config) ->
                                                 || {F, V} <- FV_Pairs_With_Dups],
                       FV_Pairs = dict:to_list(dict:from_list(Bin_FV_Pairs_With_Dups)),
                       {Fields, Values} = lists:unzip(FV_Pairs),
-                      Size   = length(Fields),
-                      Nils   = lists:duplicate(Size, nil),
-                      Nils   = ?TM:hmget(Key, Fields),       % Currently not present
-                      ok     = ?TM:hmset(Key, FV_Pairs),     % Store the new values
-                      Values = ?TM:hmget(Key, Fields),       % hget retrieves the values
-                      Values = ?TM:hmget(Key, Fields),       % hget retrieves the values
-                      Size   = ?TM:hdel (Key, Fields),       % hdel deletes the values
-                      Nils   = ?TM:hmget(Key, Fields),       % Currently not present
+                      Size     = length(Fields),
+                      Nils     = lists:duplicate(Size, nil),
+                      Nils     = ?TM:hmget(Key, Fields),       % Currently not present
+                      <<"OK">> = ?TM:hmset(Key, FV_Pairs),     % Store the new values
+                      Values   = ?TM:hmget(Key, Fields),       % hget retrieves the values
+                      Values   = ?TM:hmget(Key, Fields),       % hget retrieves the values
+                      Size     = ?TM:hdel (Key, Fields),       % hdel deletes the values
+                      Nils     = ?TM:hmget(Key, Fields),       % Currently not present
                       true
                   end),
     true = proper:quickcheck(Test_Empty_Dict_Hmset),

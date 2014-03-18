@@ -15,6 +15,7 @@
 %% External interface
 -export([
          %% get is a reserved function, so we'll use redis_get in our API.
+
          redis_get/1, redis_get/2,
          set/2, set/3,
          del/1, del/2,
@@ -129,7 +130,7 @@ hmget(Db_Num, Key, Fields)
 
 
 -spec hset  (key(), field(), set_value() ) -> 0 | 1.
--spec hmset (key(), field_value_pairs()  ) -> ok.
+-spec hmset (key(), field_value_pairs()  ) -> binary().
 
 hset (Key, Field, Value)      -> hset (?LOW_DB, Key, Field, Value).
 hmset(Key, Field_Value_Pairs) -> hmset(?LOW_DB, Key, Field_Value_Pairs).
@@ -249,10 +250,10 @@ hvals(Db_Num, Key)
     end.
 
 
--spec hincrby(key(), field(), integer()) -> integer().
--spec hincrby(db_num(), key(), field(), integer()) -> integer().
--spec hincrbyfloat(key(), field(), float()) -> float().
--spec hincrbyfloat(db_num(), key(), field(), float()) -> float().
+-spec hincrby(key(), field(), integer()) -> binary().
+-spec hincrby(db_num(), key(), field(), integer()) -> binary().
+-spec hincrbyfloat(key(), field(), float()) -> binary().
+-spec hincrbyfloat(db_num(), key(), field(), float()) -> binary().
 
 hincrby(Key, Field, Increment)
   when is_integer(Increment) ->
@@ -261,11 +262,13 @@ hincrby(Key, Field, Increment)
 hincrby(Db_Num, Key, Field, Increment)
   when ?VALID_DB_NUM(Db_Num), is_integer(Increment) ->
     Bin_Key = iolist_to_binary(Key),
+    Bin_Increment = integer_to_binary(Increment),
     case get_dict(Db_Num, Bin_Key) of
-        undefined -> set_value_in_new_dict(Db_Num, Bin_Key, Field, Increment),
-                     Increment;
+        undefined -> set_value_in_new_dict(Db_Num, Bin_Key, Field, Bin_Increment),
+                     Bin_Increment;
         Dict      -> case get_field_value(Field, Dict) of
-                         nil   -> set_value_in_existing_dict(Db_Num, Bin_Key, Field, Increment, Dict);
+                         nil   -> set_value_in_existing_dict(Db_Num, Bin_Key, Field, Bin_Increment, Dict),
+                                  Bin_Increment;
                          Value -> New_Value = integer_to_binary(binary_to_integer(Value) + Increment),
                                   set_value_in_existing_dict(Db_Num, Bin_Key, Field, New_Value, Dict),
                                   New_Value
@@ -279,11 +282,13 @@ hincrbyfloat(Key, Field, Increment)
 hincrbyfloat(Db_Num, Key, Field, Increment)
   when ?VALID_DB_NUM(Db_Num), is_float(Increment) ->
     Bin_Key = iolist_to_binary(Key),
+    Bin_Increment = float_to_binary(Increment),
     case get_dict(Db_Num, Bin_Key) of
-        undefined -> set_value_in_new_dict(Db_Num, Bin_Key, Field, Increment),
-                     Increment;
+        undefined -> set_value_in_new_dict(Db_Num, Bin_Key, Field, Bin_Increment),
+                     Bin_Increment;
         Dict      -> case get_field_value(Field, Dict) of
-                         nil   -> set_value_in_existing_dict(Db_Num, Bin_Key, Field, Increment, Dict);
+                         nil   -> set_value_in_existing_dict(Db_Num, Bin_Key, Field, Bin_Increment, Dict),
+                                  Bin_Increment;
                          Value -> New_Value = float_to_binary(binary_to_float(Value) + Increment),
                                   set_value_in_existing_dict(Db_Num, Bin_Key, Field, New_Value, Dict),
                                   New_Value
