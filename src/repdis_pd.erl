@@ -14,6 +14,10 @@
 
 %% External interface
 -export([
+         %% get is a reserved function, so we'll use redis_get in our API.
+         redis_get/1, redis_get/2,
+         set/2, set/3,
+         del/1, del/2,
          hgetall/1, hgetall/2,
          hget/2, hmget/2, hget/3, hmget/3,
          hset/3, hmset/2, hset/4, hmset/3,
@@ -46,6 +50,41 @@
 %%%------------------------------------------------------------------------------
 %%% External API
 %%%------------------------------------------------------------------------------
+
+-spec redis_get(key())                  -> get_value().
+-spec redis_get(db_num(), key())        -> get_value().
+-spec set(key(), set_value())           -> ok.
+-spec set(db_num(), key(), set_value()) -> ok.
+-spec del(key())                        -> non_neg_integer().
+-spec del(db_num(), key())              -> non_neg_integer().
+
+redis_get(Key) ->
+    redis_get(?LOW_DB, Key).
+
+redis_get(Db_Num, Key)
+  when ?VALID_DB_NUM(Db_Num) ->
+    Bin_Key = iolist_to_binary(Key),
+    get_key(Db_Num, Bin_Key).
+
+set(Key, Value) ->
+    set(?LOW_DB, Key, Value).
+
+set(Db_Num, Key, Value)
+  when ?VALID_DB_NUM(Db_Num) ->
+    Bin_Key   = iolist_to_binary(Key),
+    Bin_Value = iolist_to_binary(Value),
+    set_key(Db_Num, Bin_Key, Bin_Value).
+
+del(Key) ->
+    del(?LOW_DB, Key).
+
+del(Db_Num, Key)
+  when ?VALID_DB_NUM(Db_Num) ->
+    Bin_Key = iolist_to_binary(Key),
+    case erase_key(Db_Num, Bin_Key) of
+        undefined -> 0;
+        _Value    -> 1
+    end.
 
 -spec hgetall (key() )           -> [binary() | get_value()].  %% Actually pairs flattened.
 -spec hgetall (db_num(), key() ) -> [binary() | get_value()].  %% Actually pairs flattened.
@@ -258,6 +297,19 @@ hincrbyfloat(Db_Num, Key, Field, Increment)
 
 sentinel() -> <<"$$REPDIS">>.
 
+get_key(Db_Num, Bin_Key) ->
+    case get(make_pd_key(Db_Num, Bin_Key)) of
+        undefined -> nil;
+        Bin_Value -> Bin_Value
+    end.
+
+set_key(Db_Num, Bin_Key, Bin_Value) ->
+    put(make_pd_key(Db_Num, Bin_Key), Bin_Value),
+    ok.
+
+erase_key(Db_Num, Bin_Key) ->
+    erase(make_pd_key(Db_Num, Bin_Key)).
+    
 get_dict(Db_Num, Bin_Key)       -> get(make_pd_key(Db_Num, Bin_Key)).
 put_dict(Db_Num, Bin_Key, Dict) -> put(make_pd_key(Db_Num, Bin_Key), Dict).
 
@@ -274,7 +326,10 @@ get_field_value(Field, Dict) ->
 set_value_in_new_dict(Db_Num, Bin_Key, Field, Value)
   when is_binary(Bin_Key) ->
     Bin_Field = iolist_to_binary(Field),
-    Bin_Value = iolist_to_binary(Value),
+    Bin_Value = case Value of
+                    undefined -> undefined;
+                    Value     -> iolist_to_binary(Value)
+                end,
     New_Dict = dict:store(Bin_Field, Bin_Value, dict:new()),
     undefined = put_dict(Db_Num, Bin_Key, New_Dict),
     1.
@@ -282,13 +337,16 @@ set_value_in_new_dict(Db_Num, Bin_Key, Field, Value)
 set_value_in_existing_dict(Db_Num, Bin_Key, Field, Value, Dict)
   when is_binary(Bin_Key) ->
     Bin_Field = iolist_to_binary(Field),
-    Bin_Value = iolist_to_binary(Value),
+    Bin_Value = case Value of
+                    undefined -> undefined;
+                    Value     -> iolist_to_binary(Value)
+                end,
     {Result, New_Dict} = set_field_value(Bin_Field, Bin_Value, Dict),
     Dict = put_dict(Db_Num, Bin_Key, New_Dict),
     Result.
 
 set_field_value(Bin_Field, Bin_Value, Dict)
-  when is_binary(Bin_Field), is_binary(Bin_Value) ->
+  when is_binary(Bin_Field), is_binary(Bin_Value) orelse Bin_Value =:= undefined ->
     case {dict:find(Bin_Field, Dict), dict:store(Bin_Field, Bin_Value, Dict)} of
         {error,   Dict2} -> {1, Dict2};
         {{ok, _}, Dict2} -> {0, Dict2}
@@ -309,7 +367,10 @@ set_values_in_existing_dict(Db_Num, Bin_Key, Field_Value_Pairs, Dict)
 set_fields(Field_Value_Pairs, Dict) ->
     lists:foldl(fun({Field, Value}, Next_Dict) ->
                         Bin_Field = iolist_to_binary(Field),
-                        Bin_Value = iolist_to_binary(Value),
+                        Bin_Value = case Value of
+                                        undefined -> undefined;
+                                        Value     -> iolist_to_binary(Value)
+                                    end,
                         dict:store(Bin_Field, Bin_Value, Next_Dict) end,
                 Dict, Field_Value_Pairs).
 
