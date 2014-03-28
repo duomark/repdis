@@ -10,7 +10,7 @@
 %%% @end
 %%%------------------------------------------------------------------------------
 -module(repdis_pd_SUITE).
--auth('jay@duomark.com').
+-author('jay@duomark.com').
 -vsn('').
 
 -export([all/0, init_per_suite/1, end_per_suite/1]).
