@@ -100,16 +100,17 @@ check_hashes(_Config) ->
     
     ct:log("Hmget should return any field that is stored by hmset"),
     Test_Empty_Dict_Hmset
-        = ?FORALL({Key, FV_Pairs_With_Dups}, {?TM:key(), ?TM:field_value_pairs()},
+        = ?FORALL({Key, FV_Pairs_With_Dups}, {?TM:key(), ?TM:field_value_list()},
                   begin
                       Bin_FV_Pairs_With_Dups = [{iolist_to_binary(F), iolist_to_binary(V)}
                                                 || {F, V} <- FV_Pairs_With_Dups],
-                      FV_Pairs = dict:to_list(dict:from_list(Bin_FV_Pairs_With_Dups)),
+                      FV_Pairs   = dict:to_list(dict:from_list(Bin_FV_Pairs_With_Dups)),
+                      Flat_Pairs = flatten(FV_Pairs),
                       {Fields, Values} = lists:unzip(FV_Pairs),
                       Size     = length(Fields),
                       Nils     = lists:duplicate(Size, nil),
                       Nils     = ?TM:hmget(Key, Fields),       % Currently not present
-                      <<"OK">> = ?TM:hmset(Key, FV_Pairs),     % Store the new values
+                      <<"OK">> = ?TM:hmset(Key, Flat_Pairs),   % Store the new values
                       Values   = ?TM:hmget(Key, Fields),       % hget retrieves the values
                       Values   = ?TM:hmget(Key, Fields),       % hget retrieves the values
                       Size     = ?TM:hdel (Key, Fields),       % hdel deletes the values
@@ -119,3 +120,6 @@ check_hashes(_Config) ->
     true = proper:quickcheck(Test_Empty_Dict_Hmset),
 
     ok.
+
+flatten(KV_Pairs) ->
+    lists:foldr(fun({K, V}, Acc) -> [K, V | Acc] end, [], KV_Pairs).

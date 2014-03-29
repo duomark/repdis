@@ -42,10 +42,9 @@
 -type set_value() :: iodata().
 -type get_value() :: binary() | nil.
 
--type field_value_pair()  :: {field(), set_value()}.
--type field_value_pairs() :: [field_value_pair()].
+-type field_value_list() :: [binary()].   % Really an even number of binaries.
 
--export_type([key/0, field/0, set_value/0, get_value/0, field_value_pairs/0]).
+-export_type([key/0, field/0, set_value/0, get_value/0, field_value_list/0]).
 
 
 %%%------------------------------------------------------------------------------
@@ -130,14 +129,14 @@ hmget(Db_Num, Key, Fields)
 
 
 -spec hset  (key(), field(), set_value() ) -> 0 | 1.
--spec hmset (key(), field_value_pairs()  ) -> binary().
+-spec hmset (key(), field_value_list()  ) -> binary().
 
-hset (Key, Field, Value)      -> hset (?LOW_DB, Key, Field, Value).
-hmset(Key, Field_Value_Pairs) -> hmset(?LOW_DB, Key, Field_Value_Pairs).
+hset (Key, Field, Value)     -> hset (?LOW_DB, Key, Field, Value).
+hmset(Key, Field_Value_List) -> hmset(?LOW_DB, Key, Field_Value_List).
 
 
 -spec hset  (db_num(), key(), field(), set_value() ) -> 0 | 1.
--spec hmset (db_num(), key(), field_value_pairs()  ) -> binary().
+-spec hmset (db_num(), key(), field_value_list()  ) -> binary().
 
 hset(Db_Num, Key, Field, Value)
   when ?VALID_DB_NUM(Db_Num) ->
@@ -147,12 +146,12 @@ hset(Db_Num, Key, Field, Value)
         Dict      -> set_value_in_existing_dict(Db_Num, Bin_Key, Field, Value, Dict)
     end.
 
-hmset(Db_Num, Key, Field_Value_Pairs)
+hmset(Db_Num, Key, Field_Value_List)
   when ?VALID_DB_NUM(Db_Num) ->
     Bin_Key = iolist_to_binary(Key),
     case get_dict(Db_Num, Bin_Key) of
-        undefined -> set_values_in_new_dict     (Db_Num, Bin_Key, Field_Value_Pairs),       <<"OK">>;
-        Dict      -> set_values_in_existing_dict(Db_Num, Bin_Key, Field_Value_Pairs, Dict), <<"OK">>
+        undefined -> set_values_in_new_dict     (Db_Num, Bin_Key, Field_Value_List),       <<"OK">>;
+        Dict      -> set_values_in_existing_dict(Db_Num, Bin_Key, Field_Value_List, Dict), <<"OK">>
     end.
 
 
@@ -369,15 +368,15 @@ set_values_in_existing_dict(Db_Num, Bin_Key, Field_Value_Pairs, Dict)
     Dict = put_dict(Db_Num, Bin_Key, New_Dict),
     ok.
     
-set_fields(Field_Value_Pairs, Dict) ->
-    lists:foldl(fun({Field, Value}, Next_Dict) ->
-                        Bin_Field = iolist_to_binary(Field),
-                        Bin_Value = case Value of
-                                        undefined -> undefined;
-                                        Value     -> iolist_to_binary(Value)
-                                    end,
-                        dict:store(Bin_Field, Bin_Value, Next_Dict) end,
-                Dict, Field_Value_Pairs).
+set_fields([], Dict) -> Dict;
+set_fields([Field, Value | More], Dict) ->
+    Bin_Field = iolist_to_binary(Field),
+    Bin_Value = case Value of
+                    undefined -> undefined;
+                    Value     -> iolist_to_binary(Value)
+                end,
+    Next_Dict = dict:store(Bin_Field, Bin_Value, Dict),
+    set_fields(More, Next_Dict).
 
 fold_delete_field_value(Field, {Num_Deleted, Curr_Dict} = Curr_Result) ->
     Bin_Field = iolist_to_binary(Field),
