@@ -5,7 +5,7 @@
 {application, repdis,
  [
   {id, "repdis"},
-  {vsn, "0.1.1"},
+  {vsn, "0.1.2"},
   {description, "Redis in the Process Dictionary"},
   {modules,      [
                   repdis_pd
