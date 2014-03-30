@@ -574,7 +574,10 @@ dbsize(Db_Num)
 get_all_data() -> get_all_data(?LOW_DB).
 get_all_data(Db_Num)
   when ?VALID_DB_NUM(Db_Num) ->
-    [{Db_Key, Db_Value} || {{?SENTINEL, _Db_Num, Db_Key}, Db_Value} <- get()].
+    [{Db_Key, Db_Value}
+     || {{?SENTINEL, Db_Id, Db_Key}, Db_Value} <- get(),
+        Db_Id =:= Db_Num
+    ].
     
 
 %%%------------------------------------------------------------------------------
