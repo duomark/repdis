@@ -1,6 +1,8 @@
-*~
+
 *.beam
 *.plt
+*~
+.erlang.mk.packages.*
+deps
 ebin
 logs
-
