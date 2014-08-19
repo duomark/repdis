@@ -568,8 +568,13 @@ dbsize(Db_Num)
                    (_, Count) -> Count
                 end, 0, get()).
 
+-ifdef(SUPPORTS_DICT_TYPE_PREFIX).
+-spec get_all_data()         -> [{key(), binary() | dict:dict() | sets:set()}].
+-spec get_all_data(db_num()) -> [{key(), binary() | dict:dict() | sets:set()}].
+-else.
 -spec get_all_data()         -> [{key(), binary() | dict() | set()}].
 -spec get_all_data(db_num()) -> [{key(), binary() | dict() | set()}].
+-endif.
     
 get_all_data() -> get_all_data(?LOW_DB).
 get_all_data(Db_Num)
