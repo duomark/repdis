@@ -6,7 +6,7 @@ ERL_CMD = erl +V 2>&1 | grep -oh "version .*" | cut -f 2 -d ' ' | cut -c 1
 ERL_VERSION := $(shell ${ERL_CMD})
 
 ifeq "$(ERL_VERSION)" "6"
-	ADDL_FLAGS = "-DSUPPORTS_DICT_TYPE_PREFIX -Werror"
+	ADDL_FLAGS = -DSUPPORTS_DICT_TYPE_PREFIX -Werror
 endif
 
 ERLC_OPTS += ${ADDL_FLAGS} +debug_info +warn_export_all +warn_export_vars \
