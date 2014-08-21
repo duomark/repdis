@@ -568,8 +568,13 @@ dbsize(Db_Num)
                    (_, Count) -> Count
                 end, 0, get()).
 
+-ifdef(SUPPORTS_DICT_TYPE_PREFIX).
+-spec get_all_data()         -> [{key(), binary() | dict:dict() | sets:set()}].
+-spec get_all_data(db_num()) -> [{key(), binary() | dict:dict() | sets:set()}].
+-else.
 -spec get_all_data()         -> [{key(), binary() | dict() | set()}].
 -spec get_all_data(db_num()) -> [{key(), binary() | dict() | set()}].
+-endif.
     
 get_all_data() -> get_all_data(?LOW_DB).
 get_all_data(Db_Num)
@@ -584,7 +589,12 @@ get_all_data(Db_Num)
 %%% Internal utilities
 %%%------------------------------------------------------------------------------
 
+-ifdef(SUPPORTS_DICT_TYPE_PREFIX).
 -define(IS_DICT(__Value), is_tuple(__Value) andalso element(1, __Value) =:= dict).
+-else.
+-define(IS_DICT(__Value), __Value =:= __Value).
+-endif.
+
 -define(IS_SET (__Value),  sets:is_set(__Value)).
 
 get_key(Db_Num, Bin_Key) ->
@@ -609,6 +619,11 @@ get_set(Db_Num, Bin_Key) ->
                      end
     end.
     
+-ifdef(SUPPORTS_DICT_TYPE_PREFIX).
+-spec get_dict(non_neg_integer(), binary()) -> nil | dict:dict().
+-else.
+-spec get_dict(non_neg_integer(), binary()) -> nil | dict().
+-endif.
 get_dict(Db_Num, Bin_Key) ->
     case get(make_pd_key(Db_Num, Bin_Key)) of
         undefined -> nil;
